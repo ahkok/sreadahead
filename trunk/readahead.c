@@ -69,11 +69,11 @@ void *one_thread(void *ptr)
 int main(int argc, char **argv)
 {
 	FILE *file = fopen("/etc/readahead.packed", "r");
-	
+
 	daemon(0,0);
-	
+
 	total_files = fread(&files, sizeof(struct readahead), MAXR, file);
-	
+
 	pthread_t one, two, three, four;
 
 	pthread_create(&one, NULL, one_thread, NULL);

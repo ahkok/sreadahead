@@ -19,13 +19,11 @@
 #include <sys/ioctl.h>
 
 #define EXT3_IOC_INODE_JIFFIES          _IOR('f', 19, long)
-       
 
 #include "readahead.h"
 
 struct readahead RA[4096];
 int RAcount;
-
 
 FILE *output;
 
@@ -48,7 +46,6 @@ static int smallest_gap(struct record *record, int count)
 	}
 	return cur;
 }
-
 
 void dump_records(struct record *record, int count)
 {
@@ -111,7 +108,6 @@ int do_file(char *filename)
 	
 	time = ioctl(fd, EXT3_IOC_INODE_JIFFIES);
 	time += 300000;
-	
 
 	fstat(fd, &statbuf);
 	mmapptr = mmap(NULL, statbuf.st_size, PROT_READ, MAP_SHARED, fd, 0);
@@ -125,6 +121,7 @@ int do_file(char *filename)
 	} else {
 		phase = 0;
 	}
+
 	for (i = 0; i <= statbuf.st_size; i+=4096) {
 		if (mincorebuf[i/4096])
 			there++;
@@ -160,7 +157,6 @@ int do_file(char *filename)
 
 	reccount = reduce_to(record, reccount, 6);
 
-
 	if (reccount>0) {
 		memset(&RA[RAcount], 0, sizeof(struct readahead));
 		strcpy(RA[RAcount].filename, filename);
@@ -171,7 +167,6 @@ int do_file(char *filename)
 	}
 	return 0;
 }
-
 
 void do_metafile(char *filename)
 {
@@ -227,7 +222,6 @@ int main(int argc, char **argv)
 	
 	sort_RA();
 
-//	output=fopen("/etc/readahead.packed", "w");
 	output=fopen("readahead.packed", "w");
 	fwrite(&RA, RAcount, sizeof(struct readahead), output);
 	fclose(output);
