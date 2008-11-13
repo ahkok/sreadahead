@@ -1,7 +1,6 @@
 #ifndef __INCLUDE_GUARD_READAHEAD_H_
 #define __INCLUDE_GUARD_READAHEAD_H_
 
-
 #include <stdint.h>
 
 struct record {
