@@ -54,7 +54,8 @@ void dump_records(struct record *record, int count)
 	q = smallest_gap(record, count);
 	
 	for (i = 0; i < count; i++, record++) {
-		printf("Record %i:  Start at %iKb for %iKb", i, record->offset/1024, (record->len+1)/1024);
+		printf("Record %i:  Start at %iKb for %iKb", i,
+		       record->offset/1024, (record->len+1)/1024);
 		if (i+1 < count) {
 			int gap;
 			gap = (record+1)->offset - record->offset - record->len;
@@ -168,7 +169,7 @@ int do_file(char *filename)
 	return 0;
 }
 
-void do_metafile(char *filename)
+void do_metafile(const char *filename)
 {
 	FILE *file;
 	char line[4096];
@@ -179,9 +180,8 @@ void do_metafile(char *filename)
 	file = fopen(filename, "r");
 	if (!file)
 		return;
-	while (!feof(file)) {
+	while (fgets(line, 4095, file) != NULL) {
 		lines++;
-		fgets(line, 4095, file);
 		if (strlen(line)<4)
 			break;
 		c = strchr(line, '\n');
@@ -217,12 +217,16 @@ void sort_RA(void)
 
 int main(int argc, char **argv)
 {
-	
+	const char *out = "readahead.packed";
 	do_metafile(argv[1]);
-	
+
 	sort_RA();
 
-	output=fopen("readahead.packed", "w");
+	output = fopen(out, "w");
+	if (!output) {
+		perror(out);
+		return 1;
+	}
 	fwrite(&RA, RAcount, sizeof(struct readahead), output);
 	fclose(output);
 
