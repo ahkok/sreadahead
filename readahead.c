@@ -22,10 +22,23 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <fcntl.h>
 #include <errno.h>
 
 #include "readahead.h"
+
+#if defined(__i386__)
+#  define __NR_ioprio_set 289
+#elif defined(__x86_64__)
+#  define __NR_ioprio_set 251
+#else
+#  error "Unsupported arch"
+#endif
+#define IOPRIO_WHO_PROCESS 1
+#define IOPRIO_CLASS_IDLE 3
+#define IOPRIO_CLASS_SHIFT 13
+#define IOPRIO_IDLE_LOWEST (7 | (IOPRIO_CLASS_IDLE << IOPRIO_CLASS_SHIFT))
 
 #define MAXR 1024
 static struct readahead files[MAXR];
@@ -70,11 +83,11 @@ static void *one_thread(void *ptr)
 	return NULL;
 }
 
-
 int main(int argc, char **argv)
 {
 	const char *name = argc == 1 ? "/etc/readahead.packed" : argv[1];
 	FILE *file;
+	int pid = 0;
 	pthread_t one, two, three, four;
 
 	file = fopen(name, "r");
@@ -90,6 +103,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	fclose(file);
+
+	if (syscall(__NR_ioprio_set, IOPRIO_WHO_PROCESS, pid,
+		    IOPRIO_IDLE_LOWEST) == -1)
+		perror("Can not set IO priority to idle class");
 
 	daemon(0,0);
 
