@@ -32,26 +32,31 @@ static struct readahead files[MAXR];
 static unsigned int total_files = 0;
 
 static unsigned int cursor = 0;
-void readahead_one(int index)
+
+static void readahead_one(int index)
 {
 	int fd;
 	int i;
+	char buf[128];
 
 	fd = open(files[index].filename, O_RDONLY|O_NOATIME);
-	if (fd<1)
+	if (fd < 0)
 		fd = open(files[index].filename, O_RDONLY);
-	if (fd<1) {
-		printf("returned %i, errno is %i \n", fd, errno);
+	if (fd < 0) {
+		fprintf(stderr, "%s: open failed (%s)\n",
+			files[index].filename, strerror_r(errno, buf, sizeof buf));
 		return;
 	}
+
 	for (i = 0; i < 6; i++) {
 		if (files[index].data[i].len)
-			readahead(fd, files[index].data[i].offset, files[index].data[i].len);
+			readahead(fd, files[index].data[i].offset,
+				  files[index].data[i].len);
 	}
 	close(fd);
 }
 
-void *one_thread(void *ptr)
+static void *one_thread(void *ptr)
 {
 	while (1) {
 		unsigned int mine;
@@ -68,13 +73,25 @@ void *one_thread(void *ptr)
 
 int main(int argc, char **argv)
 {
-	FILE *file = fopen("/etc/readahead.packed", "r");
+	const char *name = argc == 1 ? "/etc/readahead.packed" : argv[1];
+	FILE *file;
+	pthread_t one, two, three, four;
 
-	daemon(0,0);
+	file = fopen(name, "r");
+	if (!file) {
+		perror(name);
+		return 1;
+	}
 
 	total_files = fread(&files, sizeof(struct readahead), MAXR, file);
 
-	pthread_t one, two, three, four;
+	if (ferror(file)) {
+		perror(name);
+		return 1;
+	}
+	fclose(file);
+
+	daemon(0,0);
 
 	pthread_create(&one, NULL, one_thread, NULL);
 	pthread_create(&two, NULL, one_thread, NULL);
@@ -87,6 +104,5 @@ int main(int argc, char **argv)
 	pthread_join(three, NULL);
 	pthread_join(four, NULL);
 
-	fclose(file);
 	return EXIT_SUCCESS;
 }
