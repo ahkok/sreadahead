@@ -1,4 +1,4 @@
-CFLAGS=-Os -g -Wall
+CFLAGS=-Os -march=i586 -g -Wall
 PROGS=sreadahead-pack sreadahead
 
 all: $(PROGS)
