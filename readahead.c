@@ -115,7 +115,6 @@ int main(int argc, char **argv)
 	pthread_create(&three, NULL, one_thread, NULL);
 	pthread_create(&four, NULL, one_thread, NULL);
 
-	printf("Waiting\n");
 	pthread_join(one, NULL);
 	pthread_join(two, NULL);
 	pthread_join(three, NULL);
