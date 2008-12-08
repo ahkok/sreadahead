@@ -1,4 +1,4 @@
-CFLAGS=-Os -march=i686 -g -Wall
+CFLAGS?=-Os -march=i686 -g -Wall
 PROGS=sreadahead-pack sreadahead
 
 all: $(PROGS)
