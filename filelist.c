@@ -186,11 +186,12 @@ void do_metafile(const char *filename)
 			break;
 		c = strchr(line, '\n');
 		if (c) *c = 0;
-		c = strchr(line, ' ');
-		if (c)
-			count += do_file(c+1);
-		else
-			count += do_file(line);
+		else {
+			printf("Warning: file name too long: %s\n", line);
+			continue; /* skip it */
+		}
+
+		count += do_file(line);
 	}
 	fclose(file);
 	printf("Wrote %i out of %i lines\n", count, lines);
