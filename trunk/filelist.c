@@ -17,10 +17,18 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <getopt.h>
 
 #define EXT3_IOC_INODE_JIFFIES          _IOR('f', 19, long)
 
 #include "readahead.h"
+
+static struct option opts[] = {
+	{ "debug", 0, NULL, 'd' },
+	{ 0, 0, NULL, 0 }
+};
+
+int debug = 0;
 
 struct readahead RA[4096];
 int RAcount;
@@ -153,7 +161,7 @@ int do_file(char *filename)
 	munmap(mmapptr, statbuf.st_size);
 	fclose(file);
 	
-	if (reccount)
+	if (reccount && debug)
 		printf("File %s is %3.1f%% in memory in %i fragments \n", filename, 100.0*there/(there+notthere), reccount);
 
 	reccount = reduce_to(record, reccount, 6);
@@ -194,8 +202,10 @@ void do_metafile(const char *filename)
 		count += do_file(line);
 	}
 	fclose(file);
-	printf("Wrote %i out of %i lines\n", count, lines);
-	printf("RAcount is %i \n", RAcount);
+	if (debug) {
+		printf("Wrote %i out of %i lines\n", count, lines);
+		printf("RAcount is %i \n", RAcount);
+	}
 }
 
 void sort_RA(void)
@@ -219,8 +229,22 @@ void sort_RA(void)
 int main(int argc, char **argv)
 {
 	const char *out = "readahead.packed";
-	do_metafile(argv[1]);
 
+	while (1) {
+		int index = 0, c;
+		c = getopt_long(argc, argv, "d", opts, &index);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 'd':
+			debug = 1;
+			break;
+		default:
+			;
+		}
+	}
+
+	do_metafile(argv[optind]);
 	sort_RA();
 
 	output = fopen(out, "w");
