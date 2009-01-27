@@ -1,22 +1,19 @@
-CFLAGS ?= -Os -march=i686 -g -Wall
-PROGS = sreadahead-pack sreadahead
+CFLAGS ?= -Os -march=i686 -g
+PROGS = sreadahead
 
-VERSION = 0.04
+VERSION = "1.0"
 
 all: $(PROGS)
 
+sreadahead: sreadahead.c Makefile
+	gcc $(CFLAGS) -lpthread -W sreadahead.c -o $@
 
-sreadahead-pack: readahead.h filelist.c Makefile
-	gcc $(CFLAGS) -W filelist.c -o $@
-
-sreadahead: readahead.h readahead.c Makefile
-	gcc $(CFLAGS) -lpthread -W readahead.c -o $@
-	
 clean:
 	rm -f *~ $(PROGS)
 
 install: all
 	mkdir -p $(DESTDIR)/sbin
+	mkdir -p $(DESTDIR)/var/lib/sreadahead/debugfs
 	install -p -m 755 $(PROGS) $(DESTDIR)/sbin
 
 dist:
