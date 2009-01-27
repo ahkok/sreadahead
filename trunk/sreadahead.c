@@ -278,7 +278,7 @@ static int get_blocks(struct ra_struct *r)
 	struct ra_record record[4096];
 	int rcount = 0;
 	int phase;
-	uint32_t start;
+	uint32_t start = 0;
 	int there = 0;
 	int notthere = 0;
 	int i;
