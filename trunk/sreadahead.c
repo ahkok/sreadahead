@@ -278,7 +278,7 @@ static int get_blocks(struct ra_struct *r)
 	struct ra_record record[4096];
 	int rcount = 0;
 	int phase;
-	uint32_t start = 0;
+	uint32_t start;
 	int there = 0;
 	int notthere = 0;
 	int i;
@@ -544,7 +544,7 @@ static void trace_stop(int signal)
 	fclose(file);
 
 	if (debug)
-		printf("Got %d records from trace\n", racount);
+		printf("Trace contained %d records\n", racount);
 
 	first_ra = ra[0];
 

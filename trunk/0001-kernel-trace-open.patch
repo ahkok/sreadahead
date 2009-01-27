@@ -1,8 +1,8 @@
-commit 063f19a2d1fa906886b160a170a5c399a9ab4d75
-Author: ahkok <ahkok@ahkok-v.jf.intel.com>
-Date:   Tue Jan 20 12:53:04 2009 -0800
+commit e9c4f51ad2b76ddbf90863c44085574197247ba3
+Author: Auke Kok <auke-jan.h.kok@intel.com>
+Date:   Tue Jan 27 11:26:00 2009 -0800
 
-    trace: add open() call tracer.
+    trace: tracer for sys_open() - sreadahead
     
     This tracer monitors regular file open() syscalls. This is a fast
     and low-overhead alternative to strace, and does not allow or
@@ -11,7 +11,7 @@ Date:   Tue Jan 20 12:53:04 2009 -0800
     Signed-off-by: Auke Kok <auke-jan.h.kok@intel.com>
 
 diff --git a/fs/open.c b/fs/open.c
-index a3a78ce..8cf2a6b 100644
+index a3a78ce..bd9eb9d 100644
 --- a/fs/open.c
 +++ b/fs/open.c
 @@ -30,6 +30,10 @@
@@ -25,14 +25,14 @@ index a3a78ce..8cf2a6b 100644
  int vfs_statfs(struct dentry *dentry, struct kstatfs *buf)
  {
  	int retval = -ENODEV;
-@@ -1040,6 +1044,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, int mode)
+@@ -1039,6 +1043,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, int mode)
+ 			} else {
  				fsnotify_open(f->f_path.dentry);
  				fd_install(fd, f);
++				trace_do_sys_open(f, flags, mode, fd);
  			}
-+			trace_do_sys_open(f, flags, mode, fd);
  		}
  		putname(tmp);
- 	}
 diff --git a/include/trace/fs.h b/include/trace/fs.h
 new file mode 100644
 index 0000000..870eec2
@@ -51,14 +51,14 @@ index 0000000..870eec2
 +
 +#endif
 diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index e2a4ff6..0400815 100644
+index e2a4ff6..d2a1ec1 100644
 --- a/kernel/trace/Kconfig
 +++ b/kernel/trace/Kconfig
 @@ -149,6 +149,15 @@ config CONTEXT_SWITCH_TRACER
  	  This tracer gets called from the context switch and records
  	  all switching of tasks.
  
-+config OPEN_CLOSE_TRACER
++config OPEN_TRACER
 +	bool "Trace open() calls"
 +	depends on DEBUG_KERNEL
 +	select TRACING
@@ -71,14 +71,14 @@ index e2a4ff6..0400815 100644
  	bool "Trace boot initcalls"
  	depends on DEBUG_KERNEL
 diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index 349d5a9..25cec6c 100644
+index 349d5a9..7f2a366 100644
 --- a/kernel/trace/Makefile
 +++ b/kernel/trace/Makefile
 @@ -20,6 +20,7 @@ obj-$(CONFIG_RING_BUFFER) += ring_buffer.o
  
  obj-$(CONFIG_TRACING) += trace.o
  obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
-+obj-$(CONFIG_OPEN_CLOSE_TRACER) += trace_open_close.o
++obj-$(CONFIG_OPEN_TRACER) += trace_open.o
  obj-$(CONFIG_SYSPROF_TRACER) += trace_sysprof.o
  obj-$(CONFIG_FUNCTION_TRACER) += trace_functions.o
  obj-$(CONFIG_IRQSOFF_TRACER) += trace_irqsoff.o
@@ -94,12 +94,12 @@ index 4d3d381..24c17d2 100644
  
  	__TRACE_LAST_TYPE
  };
-diff --git a/kernel/trace/trace_open_close.c b/kernel/trace/trace_open_close.c
+diff --git a/kernel/trace/trace_open.c b/kernel/trace/trace_open.c
 new file mode 100644
-index 0000000..4250efc
+index 0000000..7153dfc
 --- /dev/null
-+++ b/kernel/trace/trace_open_close.c
-@@ -0,0 +1,148 @@
++++ b/kernel/trace/trace_open.c
+@@ -0,0 +1,149 @@
 +/*
 + * trace open calls
 + * Copyright (C) 2009 Intel Corporation
@@ -138,13 +138,14 @@ index 0000000..4250efc
 +	buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
 +	if (!buf)
 +		return;
-+	fname = d_path(&filp->f_path, buf, PAGE_SIZE);
 +
++	fname = d_path(&filp->f_path, buf, PAGE_SIZE);
 +	if (IS_ERR(fname))
 +		goto out;
 +
 +	ftrace_printk("%s: open(\"%s\", %d, %d) = %ld\n",
 +		current->comm, fname, flags, mode, fd);
++
 +out:
 +	kfree(buf);
 +}
