@@ -3,60 +3,66 @@ sreadahead - a readahead implementation optimized for solid state devices
 ---
 
 How it works
+============
 
-Sreadahead is a simple daemon that takes a list of blocks to read as
-input and fetches that data from storage into page cache. If the list
-of blocks is properly implemented then sreadahead drastically reduces
-the time that the CPU is waiting on the IO to finish and can spend
-most of it's time on CPU-intensive tasks instead, thereby reducing
-the total time needed to perform those tasks.
+Overview
+--------
 
-The main idea is that in order to boot linux, we need to retreive large
-amounts of data from disk and perform computational tasks on them.
-If we would fetch a little bit of data, compute on that for a bit,
-fetch some new data, compute on that a bit, we are wasting free IO
-bandwidth that could have been used to fetch data in the background.
+Seek times are nearly zero on SSD devices. However, it still takes
+significant time to actually to the IO and get all the data needed
+to boot the system into memory.  Since at boot we can't do anything
+else but wait on this IO, we lose a lot of time.
 
-The classical readahead implementation solves this inefficiency by
-making a list of files that are read at boot, and reading all the
-contents of those files in the disk order into memory as soon as the
-computer boots.
+Sreadahead attempts to eliminate all this IO wait time at boot by
+reading all the needed pages from disk and into memory before they
+are actually needed by the boot process.
 
-This approach however has two flaws: It reads the entire file into
-memory, which may be much more than is actually needed. It also could
-potentially spend a lot of time reading a really large file that is
-used last at the start of it's run, thereby stalling the CPU which
-is waiting for data that could be at the end of the list.
+During an initial boot process, we monitor which parts of the disk
+contents are actually used. At a later boot, we can then read all
+that information at the first start of the boot process.
 
-Sreadahead fixes the 'order' issue by adding a timestamp to each inode
-with a kernel patch. This timestamp marks the time that the inode
-was created which marks the 'first use' time. We then can walk all
-the existing inodes in a filesystem and order all the files by this
-timestamp, thus extracting a list perfectly ordered by 'use' order.
+Initial boot
+------------
 
-This is done in the sreadahead-pack utility. This utility then checks
-for each of the files in the list which parts of that file are actually
-read into memory, and omits non-read parts from the list of blocks
-to be read.
+The initial boot is when we don't know which content is needed during
+the boot phase. During this boot process, we cannot accelerate the
+boot process, but we can monitor the boot process and determine which
+content is read from disk, and create a list of this content to use
+for subsequent boots.
 
-At the next boot, the sreadahead program parses the content of this list
-and reads all of the blocks in the order provided into the page cache.
+Sreadahead implements this phase by starting a kernel tracer which
+monitors open() syscalls in the kernel and storing them in the debugfs
+trace buffer.  After the system is done booting, sreadahead processes
+the trace content and writes out a pack file that will be read during
+subsequent boots.
 
-Inherently sreadahead-pack must be run on the target system after a
-clean boot to generate the file list, called '/etc/readahead.packed'. Of
-course sreadahead can not have been started since it will predetermine
-the file order before the actual boot begins, so the system must at
-least be started once without acceleration in order to generate a
-clean packed file.
+Subsequent boots
+----------------
+
+If sreadahead finds a pack file on the system at boot time, it will
+open this pack file and start fetching all the needed files listed
+in this pack into memory. Sreadahead minimizes the reads to data that
+is actually needed, and will not read entire files if strictly needed.
+
+Resetting the pack file
+-----------------------
+
+At one point in time, the pack file will reflect an out-of-date system
+state that is no longer accurate. This will degrade the effectiveness
+of sreadahead, and at such a point in time, the pack file should be
+deleted, so that a new pack can be automatically generated.
 
 
 ---
 
 How distributions should implement sreadahead.
 
-Distributions packaging sreadahead should implement two components:
-1) starting sreadahead as early as possible
-2) at the end of the boot sequence, generate a pack file if needed
+Distributions packaging sreadahead should implement three components:
+
+1) starting sreadahead as early as possible;
+2) (optional) at the end of the boot sequence, signal sreadahead to
+   generate it's pack file;
+3) once in a while, remove the pack file so it can be refreshed.
 
 Typically, the following line would be added to the top of
 the "rc.sysvinit" script, or equivalent, such as "rcS" or "single" init.d
@@ -67,18 +73,10 @@ script.
 This will make sreadahead fork into the background and load an existing
 readahead.packed file, and then doing it's work.
 
-If the /etc/readahead.packed file is deleted, the init.d scripts should
-typically re-generate this file at the end of a clean boot by adding an
-/etc/rc5.d/S99sreadahead-pack script that typically does something like:
-
-	if [ -f /etc/readahead.packed ]; then
-		exit 0
-	fi
-	cd /tmp
-	find / -type f \( -fstype ext3 -o -fstype rootfs \) > \
-		readahead.packed.new
-	sreadahead-pack readahead.packed.new
-	mv readahead.packed.new /etc/readahead.packed
+Sreadahead will generate the pack file after 15 seconds automatically.
+If this is too late, one can send sreadahead a SIGUSR1 signal at
+any time before this 15 seconds, to make sreadahead immediately stop
+tracing and create a pack file.
 
 To update the pack file, one can simply remove /etc/readahead.packed and
 reboot the system.
