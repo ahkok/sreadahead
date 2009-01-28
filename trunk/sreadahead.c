@@ -57,6 +57,8 @@
 #define MAXFL 128
 #define MAXRECS 6	/* reduce nr of fragments to this amount */
 
+#define DEFAULT_MAX_TIME 15 /* should be enough for every OS to boot */
+
 /*
  * By default, the kernel reads ahead for 128kb. This throws off our
  * measurements since we don't need the extra 128kb for each file.
@@ -610,18 +612,20 @@ int main(int argc, char **argv)
 	FILE *file;
 	int pid = 0;
 	pthread_t one, two, three, four;
+	int max_time = DEFAULT_MAX_TIME;
 
 	while (1) {
 		static struct option opts[] = {
 			{ "debug", 0, NULL, 'd' },
 			{ "help", 0, NULL, 'h' },
 			{ "version", 0, NULL, 'v' },
+			{ "time", 1, NULL, 't' },
 			{ 0, 0, NULL, 0 }
 		};
 		int c;
 		int index = 0;
 
-		c = getopt_long(argc, argv, "dhv", opts, &index);
+		c = getopt_long(argc, argv, "dhvt:", opts, &index);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -633,6 +637,9 @@ int main(int argc, char **argv)
 			break;
 		case 'h':
 			print_usage(argv[0]);
+			break;
+		case 't':
+			max_time = atoi(optarg);
 			break;
 		default:
 			;
@@ -647,11 +654,7 @@ int main(int argc, char **argv)
 		if (!fork()) {
 			/* child */
 			signal(SIGUSR1, trace_stop);
-			/*
-			 * "" 15 seconds should be enough for everyone to boot""
-			 * -- Auke Kok, 2009
-			 */
-			sleep(15);
+			sleep(max_time);
 			/*
 			 * abort if we don't get a signal, so we can stop
 			 * the tracing and minimize the trace buffer size
