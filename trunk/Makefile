@@ -1,4 +1,4 @@
-CFLAGS ?= -Os -march=i686 -g
+CFLAGS ?= -Os -march=native -g
 PROGS = sreadahead
 
 VERSION = "1.0"
