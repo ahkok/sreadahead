@@ -597,9 +597,11 @@ static void trace_stop(int signal)
 static void print_usage(const char *name)
 {
 	printf("Usage: %s [OPTION...]\n", name);
-	printf("  -d, --debug           Print debug output to stdout\n");
-	printf("  -h, --help            Show this help message\n");
-	printf("  -v, --version         Show version information and exit\n");
+	printf("  -t N, --time=N        Wait for N seconds before creating new\n");
+	printf("                        pack file (default %d)\n", DEFAULT_MAX_TIME);
+	printf("  -d,   --debug         Print debug output to stdout\n");
+	printf("  -h,   --help          Show this help message\n");
+	printf("  -v,   --version       Show version information and exit\n");
 	exit(EXIT_SUCCESS);
 }
 
