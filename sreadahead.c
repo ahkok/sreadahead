@@ -466,7 +466,7 @@ static void trace_stop(int signal)
 	readahead_set_len(RA_NORMAL);
 
 	/*
-	 * by now the init process should have mounted debugf on a logical
+	 * by now the init process should have mounted debugfs on a logical
 	 * location like /sys/kernel/debug, but if not then we temporarily
 	 * re-mount it ourselves
 	 */
@@ -478,6 +478,8 @@ static void trace_stop(int signal)
 			exit(EXIT_FAILURE);
 		}
 		chdir(DEBUGFS_MNT);
+	} else {
+		chdir("..");
 	}
 
 	/* stop tracing */
