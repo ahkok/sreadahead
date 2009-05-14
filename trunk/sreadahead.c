@@ -41,8 +41,11 @@
 #elif defined(__x86_64__)
 #  define HAVE_IO_PRIO
 #  define __NR_ioprio_set 251
+#elif defined(__powerpc__)
+#  define HAVE_IO_PRIO
+#  define __NR_ioprio_set 273
 #else /* not fatal */
-#  warn "Architecture does not support ioprio modification"
+#  warning "Architecture does not support ioprio modification"
 #endif
 #define IOPRIO_WHO_PROCESS 1
 #define IOPRIO_CLASS_IDLE 3
