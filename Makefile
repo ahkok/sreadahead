@@ -14,7 +14,9 @@ clean:
 install: all
 	mkdir -p $(DESTDIR)/sbin
 	mkdir -p $(DESTDIR)/var/lib/sreadahead/debugfs
+	mkdir -p $(DESTDIR)/usr/share/man/man1
 	install -p -m 755 $(PROGS) $(DESTDIR)/sbin
+	install -p -m 644 sreadahead.1 $(DESTDIR)/usr/share/man/man1
 
 dist:
 	svn export . sreadahead-$(VERSION)
