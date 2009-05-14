@@ -291,11 +291,11 @@ static int get_blocks(struct ra_struct *r)
 	if (!r)
 		goto remove;
 
-	memset(record, 0, sizeof(record));
-
 	file = fopen(r->filename, "r");
 	if (!file)
 		goto remove;
+
+	memset(record, 0, sizeof(record));
 
 	fd = fileno(file);
 	fstat(fd, &statbuf);
