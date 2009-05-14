@@ -23,7 +23,6 @@
 
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/mount.h>
 #include <sys/signal.h>
@@ -289,16 +288,22 @@ static int get_blocks(struct ra_struct *r)
 	int i;
 
 	if (!r)
-		goto remove;
+		return 0;
 
 	file = fopen(r->filename, "r");
 	if (!file)
-		goto remove;
-
-	memset(record, 0, sizeof(record));
+		return 0;
 
 	fd = fileno(file);
 	fstat(fd, &statbuf);
+	/* prevent accidentally reading from a pipe */
+	if (!(S_ISREG(statbuf.st_mode))) {
+		fclose(file);
+		return 0;
+	}
+
+	memset(record, 0, sizeof(record));
+
 	mmapptr = mmap(NULL, statbuf.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
 	mincorebuf = malloc(statbuf.st_size/4096 + 1);
@@ -346,7 +351,7 @@ static int get_blocks(struct ra_struct *r)
 	if (rcount > 0) {
 		/* some empty files slip through */
 		if (record[0].len == 0)
-			goto remove;
+			return 0;
 
 		if (debug) {
 			int tlen = 0;
@@ -366,9 +371,6 @@ static int get_blocks(struct ra_struct *r)
 		memcpy(r->data, record, sizeof(r->data));
 		return 1;
 	}
-
-remove:
-	return 0;
 }
 
 static void get_ra_blocks(void)
