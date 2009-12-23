@@ -1,0 +1,4 @@
+
+0.04 -- Fri 16 Jan 2009
+	* Moved debugging output of sreadahead-pack to -d
+	* Added a fix to ignore long filenames
