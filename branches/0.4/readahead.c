@@ -108,6 +108,9 @@ int main(int argc, char **argv)
 		    IOPRIO_IDLE_LOWEST) == -1)
 		perror("Can not set IO priority to idle class");
 
+	/* run at low CPU prio */
+	nice(-5);
+
 	daemon(0,0);
 
 	pthread_create(&one, NULL, one_thread, NULL);

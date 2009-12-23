@@ -3,13 +3,15 @@
 
 #include <stdint.h>
 
+#define MAX_FNAME_LEN 204
+
 struct record {
 	uint32_t	offset;
 	uint32_t	len;
 };
 
 struct readahead {
-	char		filename[204];
+	char		filename[MAX_FNAME_LEN];
 	unsigned long	jiffies;
 	struct record	data[6];
 };

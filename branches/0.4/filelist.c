@@ -108,6 +108,9 @@ int do_file(char *filename)
 	int there=0, notthere=0;
 	unsigned long time;
 
+	if (strlen(filename) > MAX_FNAME_LEN)
+		return 0;
+
 	memset(record, 0, sizeof(record));
 
 	file = fopen(filename, "r");

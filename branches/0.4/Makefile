@@ -7,10 +7,10 @@ all: $(PROGS)
 
 
 sreadahead-pack: readahead.h filelist.c Makefile
-	gcc $(CFLAGS) -W filelist.c -o $@
+	gcc -o $@ filelist.c $(CFLAGS) -W
 
 sreadahead: readahead.h readahead.c Makefile
-	gcc $(CFLAGS) -lpthread -W readahead.c -o $@
+	gcc -o $@ readahead.c $(CFLAGS) -lpthread -W
 	
 clean:
 	rm -f *~ $(PROGS)
