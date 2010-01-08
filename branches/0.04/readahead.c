@@ -83,6 +83,35 @@ static void *one_thread(void *ptr)
 	return NULL;
 }
 
+void dump(void)
+{
+	int i;
+	long total_size = 0;
+
+	printf("      Size Total Size   Time      Filename\n");
+
+	for (i = 0; i < MAXR; i++) {
+		unsigned long filesize;
+
+		if (files[i].jiffies == 0)
+			break;
+
+		filesize = files[i].data[0].len + files[i].data[1].len+
+			   files[i].data[2].len + files[i].data[3].len+
+			   files[i].data[4].len + files[i].data[5].len;
+		total_size += filesize;
+
+		if (filesize > 4095) {
+			printf("  %6liKb [%6liKb]   %2.4fs  %s",
+			       filesize/1024, total_size / 1024,
+			       files[i].jiffies/1000.0, files[i].filename);
+		}
+	}
+
+	exit(EXIT_SUCCESS);
+}
+
+
 int main(int argc, char **argv)
 {
 	const char *name = argc == 1 ? "/etc/readahead.packed" : argv[1];
@@ -103,6 +132,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	fclose(file);
+
+	/* dump? */
+	if (strstr(argv[0], "sreadahead-dump"))
+		dump();
 
 	if (syscall(__NR_ioprio_set, IOPRIO_WHO_PROCESS, pid,
 		    IOPRIO_IDLE_LOWEST) == -1)
